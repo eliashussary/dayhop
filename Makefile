@@ -16,7 +16,7 @@ SWIFT_BUILD := swift build -c release $(ARCH_FLAGS)
 SIGN_ID ?= -
 SIGN_FLAGS := $(if $(filter -,$(SIGN_ID)),,--options runtime --timestamp --entitlements Resources/Dayhop.entitlements)
 
-.PHONY: build bundle install dmg icon check clean
+.PHONY: build bundle install dmg icon check screenshots clean
 
 build:
 	$(SWIFT_BUILD)
@@ -62,6 +62,13 @@ check:
 	mkdir -p build
 	swiftc -swift-version 5 -o build/check Sources/Dayhop/Logic.swift scripts/check/main.swift
 	./build/check
+
+# Render the README images from the real popover, reminder and settings views (see scripts/screenshots).
+# English (US) with a 12-hour clock, whatever this Mac's locale.
+screenshots:
+	mkdir -p build
+	swiftc -swift-version 5 -o build/screenshots $(filter-out Sources/Dayhop/main.swift Sources/Dayhop/AppDelegate.swift,$(wildcard Sources/Dayhop/*.swift)) scripts/screenshots/main.swift
+	./build/screenshots .github/assets -AppleLocale en_US -AppleLanguages '(en)' -AppleICUForce24HourTime NO
 
 clean:
 	rm -rf .build build

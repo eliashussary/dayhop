@@ -89,7 +89,10 @@ final class Events: ObservableObject {
         }
     }
 
-    var hasAccess: Bool { status == .fullAccess }
+    /// Stands in for the calendar when set; used by scripts/screenshots to render sample events.
+    var sample: [Item]?
+
+    var hasAccess: Bool { sample != nil || status == .fullAccess }
 
     func requestAccess() {
         Task {
@@ -113,6 +116,10 @@ final class Events: ObservableObject {
 
     /// Events overlapping [start, end) on visible calendars, all-day first, skipping ones you declined.
     func items(from start: Date, to end: Date) -> [Item] {
+        if let sample {
+            return sample.filter { $0.start < end && start < $0.end }
+                .sorted { ($0.allDay ? 0 : 1, $0.start) < ($1.allDay ? 0 : 1, $1.start) }
+        }
         guard hasAccess else { return [] }
         let hidden = Set(Prefs.split(UserDefaults.standard.string(forKey: Prefs.hiddenCalendars) ?? ""))
         let visible = store.calendars(for: .event).filter { !hidden.contains($0.calendarIdentifier) }
