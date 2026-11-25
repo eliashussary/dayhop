@@ -73,13 +73,14 @@ enum Logic {
         return names.first { host == $0.key || host.hasSuffix("." + $0.key) }?.value
     }
 
-    /// Menu bar text for an event that starts soon ("Standup in 12m") or just started ("Standup now").
+    /// Menu bar text for an event that starts soon ("Standup in 12m", "Standup in 42s") or just started ("Standup now").
     static func countdown(title: String, start: Date, now: Date,
                           lead: TimeInterval = 30 * 60, grace: TimeInterval = 5 * 60) -> String? {
         let left = start.timeIntervalSince(now)
         guard left <= lead, left > -grace else { return nil }
         let name = title.count > 24 ? String(title.prefix(23)) + "…" : title
-        return left <= 0 ? "\(name) now" : "\(name) in \(Int((left / 60).rounded(.up)))m"
+        if left <= 0 { return "\(name) now" }
+        return left < 60 ? "\(name) in \(Int(left.rounded(.up)))s" : "\(name) in \(Int((left / 60).rounded(.up)))m"
     }
 
     /// "+5h", "−3h 30m" or "Same time", relative to `local`.

@@ -13,6 +13,8 @@ enum Prefs {
     static let reminders = "reminders"             // full-screen overlay when a meeting starts
     static let reminderLead = "reminderLead"       // seconds before the start to show it
     static let reminderLinkOnly = "reminderLinkOnly"
+    static let notifyLead = "notifyLead"           // seconds before the start to notify; 0 = off
+    static let countdown = "countdown"             // glass countdown panel for the last 60 seconds
 
     /// The locale's own short date and time, e.g. "Wed, Nov 25  9:41 AM" or "Mi., 25. Nov.  09:41".
     /// Built from two templates, since a combined one adds an " at " that's noisy in a menu bar.
@@ -25,7 +27,7 @@ enum Prefs {
         UserDefaults.standard.register(defaults: [
             format: autoFormat, showIcon: false, nextEvent: true, weekNumbers: false,
             agendaDays: 3, clocks: "", hiddenCalendars: "",
-            reminders: true, reminderLead: 60, reminderLinkOnly: true,
+            reminders: true, reminderLead: 0, reminderLinkOnly: true, notifyLead: 300, countdown: true,
         ])
     }
 
@@ -68,8 +70,17 @@ extension Item {
         location = e.location.flatMap { $0.isEmpty || $0.contains("://") ? nil : $0 }
     }
 
+    /// "12:35 – 1:20 PM  ·  Work  ·  Room 4"
+    var summary: String {
+        // uncheckedBounds: no Date <=, see Logic.swift
+        let time = Range(uncheckedBounds: (start, end < start ? start : end)).formatted(.interval.hour().minute())
+        return [time, calendar, location].compactMap { $0?.isEmpty == false ? $0 : nil }.joined(separator: "  ·  ")
+    }
+
     /// Shows the event in Calendar.app.
-    func reveal() {
+    func reveal() { Self.reveal(eventID: eventID) }
+
+    static func reveal(eventID: String) {
         let url = URL(string: "ical://ekevent/\(eventID)?method=show&options=more")
             ?? URL(fileURLWithPath: "/System/Applications/Calendar.app")
         NSWorkspace.shared.open(url)

@@ -70,6 +70,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
     @objc private func prefsChanged() {
         formatter.dateFormat = UserDefaults.standard.string(forKey: Prefs.format) ?? Prefs.autoFormat
+        if UserDefaults.standard.integer(forKey: Prefs.notifyLead) > 0 { reminders.requestNotificationAccess() }
         fetchedAt = .distantPast
         tick()
     }

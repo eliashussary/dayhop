@@ -23,7 +23,9 @@ struct SettingsView: View {
 struct GeneralTab: View {
     var previewReminder: () -> Void
     @AppStorage(Prefs.reminders) private var reminders = true
-    @AppStorage(Prefs.reminderLead) private var reminderLead = 60
+    @AppStorage(Prefs.reminderLead) private var reminderLead = 0
+    @AppStorage(Prefs.notifyLead) private var notifyLead = 300
+    @AppStorage(Prefs.countdown) private var countdown = true
     @AppStorage(Prefs.reminderLinkOnly) private var reminderLinkOnly = true
     @AppStorage(Prefs.format) private var format = Prefs.autoFormat
     @AppStorage(Prefs.showIcon) private var showIcon = false
@@ -68,9 +70,17 @@ struct GeneralTab: View {
                 Toggle("Show calendar icon", isOn: $showIcon)
                 Toggle("Show the next event 30 minutes before it starts", isOn: $nextEvent)
             }
-            Section("Meeting reminders") {
-                Toggle("Show a full-screen reminder when a meeting starts", isOn: $reminders)
-                Picker("Show it", selection: $reminderLead) {
+            Section("Before a meeting") {
+                Picker("Notification", selection: $notifyLead) {
+                    Text("Off").tag(0)
+                    Text("1 minute before").tag(60)
+                    Text("2 minutes before").tag(120)
+                    Text("5 minutes before").tag(300)
+                    Text("10 minutes before").tag(600)
+                }
+                Toggle("Countdown for the last 60 seconds", isOn: $countdown)
+                Toggle("Full-screen reminder", isOn: $reminders)
+                Picker("Show full screen", selection: $reminderLead) {
                     Text("When it starts").tag(0)
                     Text("1 minute before").tag(60)
                     Text("2 minutes before").tag(120)
@@ -78,8 +88,10 @@ struct GeneralTab: View {
                 }
                 .disabled(!reminders)
                 Toggle("Only for events with a video call link", isOn: $reminderLinkOnly)
-                    .disabled(!reminders)
                 HStack {
+                    Text("Preview plays all three for a sample meeting 15 seconds away.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Spacer()
                     Button("Preview", action: previewReminder)
                 }

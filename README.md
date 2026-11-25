@@ -6,7 +6,7 @@
 
 **Your day, one click away.**
 
-A tiny, native macOS menu bar calendar. The date and time in your menu bar, your month and upcoming events one click away, a full-screen heads-up when a meeting starts, and clocks for everywhere your team works.
+A tiny, native macOS menu bar calendar. The date and time in your menu bar, your month and upcoming events one click away, warnings that count you into every meeting, and clocks for everywhere your team works.
 
 [![Latest release](https://img.shields.io/github/v/release/eliashussary/dayhop?label=download&color=e83a54)](https://github.com/eliashussary/dayhop/releases/latest)
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black?logo=apple)
@@ -29,9 +29,9 @@ A tiny, native macOS menu bar calendar. The date and time in your menu bar, your
 - **Your format in the menu bar.** Any [date format](https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table), with a live preview and presets. Add a calendar icon that shows today's date, or use the icon alone.
 - **Month at a glance.** Click the menu bar for the month, with dots on busy days and optional week numbers. Click any day to see what's on.
 - **Upcoming events.** Everything in the Calendar app (iCloud, Google, Exchange, anything it syncs), opening on what's next. Declined and canceled events stay out of the way.
-- **Full-screen meeting reminders.** When a meeting starts, a glassy overlay covers your screen with a live countdown and a big **Join** button. Press `↩` to join, `esc` to dismiss.
+- **Warnings before every meeting.** A notification 5 minutes before, a glass countdown for the last 60 seconds, then a full-screen reminder when it starts, each with a **Join** button.
 - **One-click join.** Zoom, Google Meet, Teams, Webex, Whereby, Jitsi, Chime and FaceTime links are found in the event's URL, location or notes.
-- **Next-meeting countdown.** For the 30 minutes before an event, the menu bar reads `Design review in 9m`.
+- **Next-meeting countdown.** For the 30 minutes before an event, the menu bar reads `Design review in 9m`, then counts seconds in the last minute.
 - **World clocks.** Add a city or an abbreviation (`Tokyo`, `PST`) to see its time, its offset from yours and whether it's already tomorrow there.
 - **Native and small.** Written in Swift with AppKit and SwiftUI. It runs as a menu bar app with no Dock icon, and has no network access, analytics or account.
 
@@ -63,21 +63,33 @@ To uninstall, quit Dayhop from its menu and delete it from Applications.
 | Click an event | Open it in Calendar |
 | **Join** | Open the meeting link |
 
-### Meeting reminders
+### Before a meeting
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/reminder-dark.jpg">
-  <img src=".github/assets/reminder-light.jpg" alt="A full-screen reminder over a blurred desktop: 'Starting in 0:57', 'Design review', '12:26 – 1:11 PM · Work', with Dismiss and Join on Zoom buttons" width="880">
-</picture>
+Dayhop warns you three times, and each stage has a **Join** button. Joining from any of them skips the ones still to come.
 
-The reminder appears on the screen your pointer is on, over full-screen apps too.
+1. **5 minutes before:** a notification with the time, calendar and location. Click **Join**, or click the notification to open the event in Calendar.
+2. **60 seconds before:** a glass countdown panel under the menu bar, with a ring that drains to the start. It never takes focus from what you're typing.
 
-| Key | Action |
-| --- | --- |
-| `↩` | Join the meeting (or open the event in Calendar if it has no link) |
-| `esc` | Dismiss |
+   <picture>
+     <source media="(prefers-color-scheme: dark)" srcset=".github/assets/countdown-dark.jpg">
+     <img src=".github/assets/countdown-light.jpg" alt="A glass panel under the menu bar: a countdown ring with the seconds left, 'Design review', 'Starting in 0:35', a Join button and a close button. The menu bar counts down in seconds too" width="880">
+   </picture>
 
-In **Settings → General** you can show it when the meeting starts or 1, 2 or 5 minutes before, limit it to events with a video call link (the default), or turn it off. **Preview** shows a sample reminder.
+3. **When it starts:** a full-screen reminder on the screen your pointer is on, over full-screen apps too.
+
+   <picture>
+     <source media="(prefers-color-scheme: dark)" srcset=".github/assets/reminder-dark.jpg">
+     <img src=".github/assets/reminder-light.jpg" alt="A full-screen reminder over a blurred desktop: 'Starting in 0:57', 'Design review', '12:26 – 1:11 PM · Work', with Dismiss and Join on Zoom buttons" width="880">
+   </picture>
+
+   | Key | Action |
+   | --- | --- |
+   | `↩` | Join the meeting (or open the event in Calendar if it has no link) |
+   | `esc` | Dismiss |
+
+In **Settings → General → Before a meeting** you can move the notification (1–10 minutes before) or turn it off, turn off the countdown, show the full-screen reminder up to 5 minutes early or not at all, and choose whether events without a video call link get warnings too. **Preview** plays all three for a sample meeting 15 seconds away.
+
+The first notification asks for permission. If you missed it, turn on Dayhop in **System Settings → Notifications**.
 
 ### Settings
 
@@ -88,7 +100,7 @@ In **Settings → General** you can show it when the meeting starts or 1, 2 or 5
 
 Open Settings from the gear in the calendar, or by right-clicking the menu bar item.
 
-- **General:** the menu bar format and icon, the next-meeting countdown, meeting reminders, week numbers, how many days of events to list, and launch at login.
+- **General:** the menu bar format and icon, the next-meeting countdown, the warnings before a meeting, week numbers, how many days of events to list, and launch at login.
 - **Clocks:** add, reorder and remove world clocks.
 - **Calendars:** choose which calendars to show, such as hiding holidays or birthdays.
 
@@ -109,7 +121,7 @@ make dmg UNIVERSAL=1    # build a universal disk image in build/
 | --- | --- |
 | `Sources/Dayhop/AppDelegate.swift` | Menu bar item, clock tick, popover and menus |
 | `Sources/Dayhop/PopoverView.swift` | Month grid, agenda and world clocks |
-| `Sources/Dayhop/Reminder.swift` | The full-screen meeting reminder |
+| `Sources/Dayhop/Reminder.swift` | Meeting notifications, the countdown panel and the full-screen reminder |
 | `Sources/Dayhop/Settings.swift` | The Settings window |
 | `Sources/Dayhop/Events.swift` | Preferences and Calendar (EventKit) access |
 | `Sources/Dayhop/Logic.swift` | Pure date and text helpers covered by `make check` |

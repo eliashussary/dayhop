@@ -31,6 +31,8 @@ assert(Logic.meetingURL(in: ["https://evilzoom.us/j/1", "https://docs.google.com
 // Countdown.
 let now = day(2026, 11, 25, 9)
 assert(Logic.countdown(title: "Standup", start: now.addingTimeInterval(11 * 60 + 1), now: now) == "Standup in 12m")
+assert(Logic.countdown(title: "Standup", start: now.addingTimeInterval(60), now: now) == "Standup in 1m")
+assert(Logic.countdown(title: "Standup", start: now.addingTimeInterval(41.3), now: now) == "Standup in 42s")
 assert(Logic.countdown(title: "Standup", start: now.addingTimeInterval(-60), now: now) == "Standup now")
 assert(Logic.countdown(title: "Standup", start: now.addingTimeInterval(31 * 60), now: now) == nil)
 assert(Logic.countdown(title: "Standup", start: now.addingTimeInterval(-6 * 60), now: now) == nil)

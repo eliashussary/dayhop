@@ -394,6 +394,34 @@ MainActor.assumeIsolated {
             c.save("reminder-\(mode)")
         }
 
+        // Countdown: the glass panel under the menu bar in a meeting's last minute.
+        do {
+            let c = Canvas(1100, 300)
+            let meeting = upcoming.first ?? events.sample![3]
+            let soon = Item(id: "soon", eventID: "", title: meeting.title, start: now.addingTimeInterval(41.5),
+                            end: now.addingTimeInterval(41.5 + meeting.end.timeIntervalSince(meeting.start)), allDay: false,
+                            color: meeting.color, meeting: meeting.meeting, calendar: meeting.calendar)
+            let panel = snapshot(
+                CountdownView(item: soon, join: {}, close: {})
+                    .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(.regularMaterial))
+                    .background(RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(Color(nsColor: .windowBackgroundColor).opacity(0.75)))
+                    .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)),
+                dark: dark)
+            let doc = snapshot(DocMock(), dark: dark)
+            // Read the clock after rendering, so the menu bar agrees with the panel's seconds.
+            let rendered = Date()
+            let menu = [Logic.countdown(title: soon.title, start: soon.start, now: rendered), formatter.string(from: rendered)]
+                .compactMap { $0 }.joined(separator: "  ·  ")
+            c.draw {
+                wallpaper(c, dark: dark)
+                menuBar(c, dark: dark, app: "Notes", dayhop: menu)
+                c.place(doc, x: 60, y: 70, width: 600, shadow: 36, dark: dark)
+                c.place(panel, x: c.size.width - panel.size.width - 14, y: 40, shadow: 28, dark: dark)
+            }
+            c.save("countdown-\(mode)")
+        }
+
         // Settings: General behind, Clocks in front.
         do {
             let c = Canvas(1100, 760)
