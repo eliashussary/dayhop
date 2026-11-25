@@ -41,6 +41,34 @@ enum Logic {
         return nil
     }
 
+    /// Whether a meeting reminder is due: from `lead` seconds before the start until two minutes after
+    /// (so one still shows if the Mac wakes just after the meeting began).
+    static func reminderDue(start: Date, now: Date, lead: TimeInterval) -> Bool {
+        let left = start.timeIntervalSince(now)
+        return left <= lead && left > -120
+    }
+
+    /// The reminder's live headline: "Starting in 0:45", "Starting now", "Started 3 min ago".
+    static func startsText(start: Date, now: Date) -> String {
+        let left = start.timeIntervalSince(now)
+        if left > 0 {
+            let s = Int(left.rounded(.up))
+            return String(format: "Starting in %d:%02d", s / 60, s % 60)
+        }
+        return left > -60 ? "Starting now" : "Started \(Int(-left / 60)) min ago"
+    }
+
+    /// "Zoom", "Google Meet", … for the Join button; nil for services without a nicer name.
+    static func serviceName(_ url: URL) -> String? {
+        let host = url.host?.lowercased() ?? ""
+        let names = [
+            "zoom.us": "Zoom", "zoomgov.com": "Zoom", "meet.google.com": "Google Meet",
+            "teams.microsoft.com": "Teams", "teams.live.com": "Teams", "webex.com": "Webex",
+            "whereby.com": "Whereby", "meet.jit.si": "Jitsi", "chime.aws": "Chime", "facetime.apple.com": "FaceTime",
+        ]
+        return names.first { host == $0.key || host.hasSuffix("." + $0.key) }?.value
+    }
+
     /// Menu bar text for an event that starts soon ("Standup in 12m") or just started ("Standup now").
     static func countdown(title: String, start: Date, now: Date,
                           lead: TimeInterval = 30 * 60, grace: TimeInterval = 5 * 60) -> String? {

@@ -36,6 +36,20 @@ assert(Logic.countdown(title: "Standup", start: now.addingTimeInterval(31 * 60),
 assert(Logic.countdown(title: "Standup", start: now.addingTimeInterval(-6 * 60), now: now) == nil)
 assert(Logic.countdown(title: String(repeating: "x", count: 30), start: now, now: now) == String(repeating: "x", count: 23) + "… now")
 
+// Meeting reminders.
+assert(Logic.reminderDue(start: now.addingTimeInterval(60), now: now, lead: 60))
+assert(!Logic.reminderDue(start: now.addingTimeInterval(61), now: now, lead: 60))
+assert(Logic.reminderDue(start: now, now: now, lead: 0))
+assert(Logic.reminderDue(start: now.addingTimeInterval(-119), now: now, lead: 0))
+assert(!Logic.reminderDue(start: now.addingTimeInterval(-120), now: now, lead: 0))
+assert(Logic.startsText(start: now.addingTimeInterval(44.2), now: now) == "Starting in 0:45")
+assert(Logic.startsText(start: now.addingTimeInterval(125), now: now) == "Starting in 2:05")
+assert(Logic.startsText(start: now.addingTimeInterval(-10), now: now) == "Starting now")
+assert(Logic.startsText(start: now.addingTimeInterval(-185), now: now) == "Started 3 min ago")
+assert(Logic.serviceName(URL(string: "https://us02web.zoom.us/j/1")!) == "Zoom")
+assert(Logic.serviceName(URL(string: "https://meet.google.com/abc")!) == "Google Meet")
+assert(Logic.serviceName(URL(string: "https://example.com")!) == nil)
+
 // Time zones.
 let toronto = TimeZone(identifier: "America/Toronto")!
 assert(Logic.offset(of: TimeZone(identifier: "Europe/London")!, from: toronto, at: now) == "+5h")

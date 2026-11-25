@@ -4,13 +4,14 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let events = Events()
+    private let reminders = Reminders()
     private let popover = NSPopover()
     private let formatter = DateFormatter()
     private let calendar = Calendar.autoupdatingCurrent
     private var statusItem: NSStatusItem!
     private var settings: NSWindow?
     private var iconDay = 0
-    // Events in the next half hour, for the menu bar countdown. Refetched each minute or on calendar changes.
+    // Events in the next half hour, for the countdown and reminders. Refetched each minute or on calendar changes.
     private var upcoming: [Item] = []
     private var fetchedAt = Date.distantPast
     private var fetchedRevision = -1
@@ -70,7 +71,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let button = statusItem.button else { return }
         let now = Date()
         let date = formatter.string(from: now)
-        let title = [nextEvent(now), date.isEmpty ? nil : date].compactMap { $0 }.joined(separator: "  ·  ")
+        let soon = upcomingEvents(now)
+        reminders.check(soon, now: now)
+        let countdown = UserDefaults.standard.bool(forKey: Prefs.nextEvent)
+            ? soon.lazy.compactMap { Logic.countdown(title: $0.title, start: $0.start, now: now) }.first
+            : nil
+        let title = [countdown, date.isEmpty ? nil : date].compactMap { $0 }.joined(separator: "  ·  ")
         if button.title != title { button.title = title }
 
         // Never leave an empty, unclickable status item: fall back to the icon.
@@ -86,15 +92,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func nextEvent(_ now: Date) -> String? {
-        guard UserDefaults.standard.bool(forKey: Prefs.nextEvent), events.hasAccess else { return nil }
+    private func upcomingEvents(_ now: Date) -> [Item] {
+        guard events.hasAccess else { return [] }
         if now.timeIntervalSince(fetchedAt) >= 60 || fetchedRevision != events.revision {
             upcoming = events.items(from: now.addingTimeInterval(-5 * 60), to: now.addingTimeInterval(31 * 60))
                 .filter { !$0.allDay }
             fetchedAt = now
             fetchedRevision = events.revision
         }
-        return upcoming.lazy.compactMap { Logic.countdown(title: $0.title, start: $0.start, now: now) }.first
+        return upcoming
     }
 
     // MARK: Popover and menus
@@ -140,7 +146,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func showSettings() {
         popover.performClose(nil)
         if settings == nil {
-            let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(events: events)))
+            let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(events: events, previewReminder: { [weak self] in self?.reminders.preview() })))
             window.title = "Dayhop Settings"
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false

@@ -3,23 +3,28 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var events: Events
+    var previewReminder: () -> Void
 
     var body: some View {
         TabView {
-            GeneralTab()
+            GeneralTab(previewReminder: previewReminder)
                 .tabItem { Label("General", systemImage: "gearshape") }
             ClocksTab()
                 .tabItem { Label("Clocks", systemImage: "globe") }
             CalendarsTab(events: events)
                 .tabItem { Label("Calendars", systemImage: "calendar") }
         }
-        .frame(width: 480, height: 470)
+        .frame(width: 480, height: 560)
     }
 }
 
 // MARK: - General
 
 struct GeneralTab: View {
+    var previewReminder: () -> Void
+    @AppStorage(Prefs.reminders) private var reminders = true
+    @AppStorage(Prefs.reminderLead) private var reminderLead = 60
+    @AppStorage(Prefs.reminderLinkOnly) private var reminderLinkOnly = true
     @AppStorage(Prefs.format) private var format = Prefs.autoFormat
     @AppStorage(Prefs.showIcon) private var showIcon = false
     @AppStorage(Prefs.nextEvent) private var nextEvent = true
@@ -62,6 +67,22 @@ struct GeneralTab: View {
                 }
                 Toggle("Show calendar icon", isOn: $showIcon)
                 Toggle("Show the next event 30 minutes before it starts", isOn: $nextEvent)
+            }
+            Section("Meeting reminders") {
+                Toggle("Show a full-screen reminder when a meeting starts", isOn: $reminders)
+                Picker("Show it", selection: $reminderLead) {
+                    Text("When it starts").tag(0)
+                    Text("1 minute before").tag(60)
+                    Text("2 minutes before").tag(120)
+                    Text("5 minutes before").tag(300)
+                }
+                .disabled(!reminders)
+                Toggle("Only for events with a video call link", isOn: $reminderLinkOnly)
+                    .disabled(!reminders)
+                HStack {
+                    Spacer()
+                    Button("Preview", action: previewReminder)
+                }
             }
             Section("Calendar") {
                 Toggle("Show week numbers", isOn: $weekNumbers)

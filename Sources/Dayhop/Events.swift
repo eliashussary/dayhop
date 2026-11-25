@@ -10,6 +10,9 @@ enum Prefs {
     static let agendaDays = "agendaDays"
     static let clocks = "clocks"                   // comma-separated time zone ids
     static let hiddenCalendars = "hiddenCalendars" // comma-separated calendar ids
+    static let reminders = "reminders"             // full-screen overlay when a meeting starts
+    static let reminderLead = "reminderLead"       // seconds before the start to show it
+    static let reminderLinkOnly = "reminderLinkOnly"
 
     /// The locale's own short date and time, e.g. "Wed, Nov 25  9:41 AM" or "Mi., 25. Nov.  09:41".
     /// Built from two templates, since a combined one adds an " at " that's noisy in a menu bar.
@@ -22,6 +25,7 @@ enum Prefs {
         UserDefaults.standard.register(defaults: [
             format: autoFormat, showIcon: false, nextEvent: true, weekNumbers: false,
             agendaDays: 3, clocks: "", hiddenCalendars: "",
+            reminders: true, reminderLead: 60, reminderLinkOnly: true,
         ])
     }
 
@@ -44,6 +48,8 @@ struct Item: Identifiable {
     let allDay: Bool
     let color: Color
     let meeting: URL?
+    var calendar = ""
+    var location: String?
 }
 
 extension Item {
@@ -57,6 +63,9 @@ extension Item {
         allDay = e.isAllDay
         color = Color(nsColor: e.calendar?.color ?? .secondaryLabelColor)
         meeting = Logic.meetingURL(in: [e.url?.absoluteString, e.location, e.notes])
+        calendar = e.calendar?.title ?? ""
+        // Locations that are just a call link are already covered by Join.
+        location = e.location.flatMap { $0.isEmpty || $0.contains("://") ? nil : $0 }
     }
 
     /// Shows the event in Calendar.app.
