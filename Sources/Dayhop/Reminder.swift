@@ -160,12 +160,14 @@ final class Reminders: NSObject, UNUserNotificationCenterDelegate {
     /// Liquid Glass on macOS 26 and later, a HUD blur before that.
     private static func glass(_ content: NSView, cornerRadius: CGFloat) -> NSView {
         content.autoresizingMask = [.width, .height]
+        #if compiler(>=6.2) // NSGlassEffectView needs the macOS 26 SDK (Xcode 26 / Swift 6.2)
         if #available(macOS 26.0, *) {
             let glass = NSGlassEffectView()
             glass.cornerRadius = cornerRadius
             glass.contentView = content
             return glass
         }
+        #endif
         let blur = NSVisualEffectView()
         blur.material = .hudWindow
         blur.blendingMode = .behindWindow

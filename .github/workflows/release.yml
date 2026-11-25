@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: macos-15
+    runs-on: macos-26
     env:
       # Signing + notarization turn on automatically once these secrets exist.
       HAS_SIGNING: ${{ secrets.MACOS_CERTIFICATE != '' }}
