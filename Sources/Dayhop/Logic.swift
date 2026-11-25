@@ -28,13 +28,17 @@ enum Logic {
         "zoom.us", "zoomgov.com", "meet.google.com", "teams.microsoft.com", "teams.live.com",
         "webex.com", "whereby.com", "meet.jit.si", "chime.aws", "facetime.apple.com", "around.co",
     ]
-    private static let linkDetector = try! NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+    /// http(s) URLs up to whitespace or the brackets and quotes invites wrap them in.
+    /// A plain regex: NSDataDetector took ~2ms per event on long invite notes, which added up to half a second per popover.
+    private static let linkPattern = try! NSRegularExpression(pattern: #"https?://[^\s<>"'()\[\]]+"#, options: .caseInsensitive)
 
     /// First video-call link found in an event's URL, location or notes.
     static func meetingURL(in texts: [String?]) -> URL? {
         for case let text? in texts {
-            for match in linkDetector.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
-                guard let url = match.url, let host = url.host?.lowercased() else { continue }
+            for match in linkPattern.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+                guard let range = Range(match.range, in: text),
+                      let url = URL(string: String(text[range]).trimmingCharacters(in: CharacterSet(charactersIn: ".,;:"))),
+                      let host = url.host?.lowercased() else { continue }
                 if meetingHosts.contains(where: { host == $0 || host.hasSuffix("." + $0) }) { return url }
             }
         }

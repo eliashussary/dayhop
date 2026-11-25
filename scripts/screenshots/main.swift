@@ -354,7 +354,7 @@ MainActor.assumeIsolated {
         // Hero: the popover open under the menu bar item, with the countdown in the menu bar.
         do {
             let c = Canvas(1100, 760)
-            let popover = snapshot(MockPopover { PopoverView(events: events, openSettings: {}) }, dark: dark)
+            let popover = snapshot(MockPopover { PopoverView(events: events, state: PopoverState(), openSettings: {}) }, dark: dark)
             let doc = snapshot(DocMock(), dark: dark)
             c.draw {
                 wallpaper(c, dark: dark)

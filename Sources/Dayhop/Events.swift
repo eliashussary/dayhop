@@ -120,6 +120,20 @@ final class Events: ObservableObject {
             return sample.filter { $0.start < end && start < $0.end }
                 .sorted { ($0.allDay ? 0 : 1, $0.start) < ($1.allDay ? 0 : 1, $1.start) }
         }
+        return rawEvents(from: start, to: end)
+            .map(Item.init)
+            .sorted { ($0.allDay ? 0 : 1, $0.start) < ($1.allDay ? 0 : 1, $1.start) }
+    }
+
+    /// Start of each day with an event in [start, end). Skips building Items (and their link search),
+    /// which is most of the cost over a whole month.
+    func busyDays(from start: Date, to end: Date, calendar: Calendar) -> Set<Date> {
+        let spans: [(Date, Date)] = sample.map { $0.map { ($0.start, $0.end) } }
+            ?? rawEvents(from: start, to: end).map { ($0.startDate, $0.endDate) }
+        return Set(spans.flatMap { Logic.days(from: $0.0, to: $0.1, calendar: calendar) })
+    }
+
+    private func rawEvents(from start: Date, to end: Date) -> [EKEvent] {
         guard hasAccess else { return [] }
         let hidden = Set(Prefs.split(UserDefaults.standard.string(forKey: Prefs.hiddenCalendars) ?? ""))
         let visible = store.calendars(for: .event).filter { !hidden.contains($0.calendarIdentifier) }
@@ -129,7 +143,5 @@ final class Events: ObservableObject {
                 e.status != .canceled
                     && e.attendees?.first(where: \.isCurrentUser)?.participantStatus != .declined
             }
-            .map(Item.init)
-            .sorted { ($0.allDay ? 0 : 1, $0.start) < ($1.allDay ? 0 : 1, $1.start) }
     }
 }

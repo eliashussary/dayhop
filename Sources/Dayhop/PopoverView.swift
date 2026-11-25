@@ -6,21 +6,36 @@ final class Box<T>: ObservableObject {
     init(_ value: T) { self.value = value }
 }
 
+/// What the popover is showing. Owned by the app so one popover view can be reused across opens
+/// (rebuilding it took up to ~200ms) and reset to today each time.
+@MainActor
+final class PopoverState: ObservableObject {
+    @Published var month = Date()
+    @Published var selected = Calendar.autoupdatingCurrent.startOfDay(for: Date())
+    /// Bumped on every open, so the agenda re-scrolls to what's next.
+    @Published private(set) var opened = 0
+
+    func reset() {
+        month = Date()
+        selected = Calendar.autoupdatingCurrent.startOfDay(for: Date())
+        opened += 1
+    }
+}
+
 struct PopoverView: View {
     @ObservedObject var events: Events
+    @ObservedObject var state: PopoverState
     var openSettings: () -> Void
 
     @AppStorage(Prefs.weekNumbers) private var weekNumbers = false
     @AppStorage(Prefs.agendaDays) private var agendaDays = 3
     @AppStorage(Prefs.clocks) private var clocks = ""
-    @StateObject private var month = Box(Date())
-    @StateObject private var selected = Box(Calendar.autoupdatingCurrent.startOfDay(for: Date()))
     private let cal = Calendar.autoupdatingCurrent
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             header
-            MonthGrid(events: events, month: $month.value, selected: $selected.value, weekNumbers: weekNumbers)
+            MonthGrid(events: events, month: $state.month, selected: $state.selected, weekNumbers: weekNumbers)
             Divider()
             agenda
             let zones = Prefs.zones(clocks)
@@ -37,14 +52,14 @@ struct PopoverView: View {
 
     private var header: some View {
         HStack(spacing: 6) {
-            Text(month.value, format: .dateTime.month(.wide).year())
+            Text(state.month, format: .dateTime.month(.wide).year())
                 .font(.headline)
             Spacer()
             Button { shift(-1) } label: { Image(systemName: "chevron.left") }
                 .help("Previous month")
             Button("Today") {
-                month.value = Date()
-                selected.value = cal.startOfDay(for: Date())
+                state.month = Date()
+                state.selected = cal.startOfDay(for: Date())
             }
             Button { shift(1) } label: { Image(systemName: "chevron.right") }
                 .help("Next month")
@@ -53,13 +68,13 @@ struct PopoverView: View {
     }
 
     private func shift(_ n: Int) {
-        month.value = cal.date(byAdding: .month, value: n, to: month.value) ?? month.value
+        state.month = cal.date(byAdding: .month, value: n, to: state.month) ?? state.month
     }
 
     // MARK: Agenda
 
     private var agenda: some View {
-        let days = (0..<max(agendaDays, 1)).compactMap { cal.date(byAdding: .day, value: $0, to: selected.value) }
+        let days = (0..<max(agendaDays, 1)).compactMap { cal.date(byAdding: .day, value: $0, to: state.selected) }
         let byDay = events.hasAccess ? itemsByDay(days) : [:]
         // Today's first event that hasn't ended, so the list opens on what's next rather than this morning.
         let now = Date()
@@ -88,6 +103,9 @@ struct PopoverView: View {
             }
             .frame(height: 200)
             .onAppear {
+                if let next { proxy.scrollTo(next, anchor: .top) }
+            }
+            .onChange(of: state.opened) {
                 if let next { proxy.scrollTo(next, anchor: .top) }
             }
         }
@@ -199,7 +217,7 @@ struct MonthGrid: View {
     private func busyDays(_ days: [Date]) -> Set<Date> {
         guard let first = days.first, let last = days.last,
               let end = cal.date(byAdding: .day, value: 1, to: last) else { return [] }
-        return Set(events.items(from: first, to: end).flatMap { Logic.days(from: $0.start, to: $0.end, calendar: cal) })
+        return events.busyDays(from: first, to: end, calendar: cal)
     }
 }
 

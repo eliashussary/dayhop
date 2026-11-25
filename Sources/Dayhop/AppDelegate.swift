@@ -2,15 +2,17 @@ import AppKit
 import SwiftUI
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private let events = Events()
     private let reminders = Reminders()
+    private let popoverState = PopoverState()
     private let popover = NSPopover()
     private let formatter = DateFormatter()
     private let calendar = Calendar.autoupdatingCurrent
     private var statusItem: NSStatusItem!
     private var settings: NSWindow?
     private var iconDay = 0
+    private var popoverClosedAt = Date.distantPast
     // Events in the next half hour, for the countdown and reminders. Refetched each minute or on calendar changes.
     private var upcoming: [Item] = []
     private var fetchedAt = Date.distantPast
@@ -22,12 +24,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         formatter.locale = .autoupdatingCurrent
         formatter.timeZone = .autoupdatingCurrent
         popover.behavior = .transient
+        popover.delegate = self
+        let host = NSHostingController(rootView: PopoverView(events: events, state: popoverState,
+                                                             openSettings: { [weak self] in self?.showSettings() }))
+        host.sizingOptions = .preferredContentSize
+        popover.contentViewController = host
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.target = self
             button.action = #selector(click(_:))
-            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+            button.sendAction(on: [.leftMouseDown, .rightMouseDown]) // like system menus: respond on press, not release
             button.font = .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
         }
         NotificationCenter.default.addObserver(self, selector: #selector(prefsChanged),
@@ -107,22 +114,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func click(_ sender: NSStatusBarButton) {
         let event = NSApp.currentEvent
-        if event?.type == .rightMouseUp || event?.modifierFlags.contains(.control) == true {
+        if event?.type == .rightMouseDown || event?.modifierFlags.contains(.control) == true {
             showMenu()
         } else if popover.isShown {
             popover.performClose(nil)
-        } else {
+        } else if Date().timeIntervalSince(popoverClosedAt) > 0.3 {
             showPopover()
         }
+        // Otherwise this same press already closed the transient popover (it closes on any click outside it,
+        // the menu bar item included, before this action runs), so leave it closed.
+    }
+
+    func popoverWillClose(_ notification: Notification) {
+        popoverClosedAt = Date()
     }
 
     private func showPopover() {
         guard let button = statusItem.button else { return }
         events.refreshStatus()
-        // A fresh view each time, so it always opens on today.
-        let host = NSHostingController(rootView: PopoverView(events: events, openSettings: { [weak self] in self?.showSettings() }))
-        host.sizingOptions = .preferredContentSize
-        popover.contentViewController = host
+        popoverState.reset()
         NSApp.activate()
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
     }
